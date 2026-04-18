@@ -7,11 +7,7 @@ from config import (
     TOP_K, CHROMA_DB_PATH, COLLECTION_NAME, SYSTEM_PROMPT
 )
 
-client = genai.Client(
-    api_key=GEMINI_API_KEY,
-    http_options=types.HttpOptions(api_version="v1")
-)
-
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 def retrieve(query: str, top_k: int = TOP_K) -> list[dict]:
     chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
