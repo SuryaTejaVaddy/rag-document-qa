@@ -3,29 +3,22 @@ import chromadb
 from google import genai
 from google.genai import types
 from config import (
-    GEMINI_API_KEY, EMBEDDING_MODEL, CHAT_MODEL,
+    GEMINI_API_KEY, CHAT_MODEL,
     TOP_K, CHROMA_DB_PATH, COLLECTION_NAME, SYSTEM_PROMPT
 )
 
-client = genai.Client(api_key=GEMINI_API_KEY,
-                      http_options=types.HttpOptions(api_version="v1"))
+client = genai.Client(
+    api_key=GEMINI_API_KEY,
+    http_options=types.HttpOptions(api_version="v1")
+)
 
 
-def embed_query(query: str) -> list[float]:
-    result = client.models.embed_content(
-        model=EMBEDDING_MODEL,
-        contents=query,
-        config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY")
-    )
-    return result.embeddings[0].values
-
-
-def retrieve(query_embedding: list[float], top_k: int = TOP_K) -> list[dict]:
+def retrieve(query: str, top_k: int = TOP_K) -> list[dict]:
     chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
     collection = chroma_client.get_collection(name=COLLECTION_NAME)
 
     results = collection.query(
-        query_embeddings=[query_embedding],
+        query_texts=[query],
         n_results=top_k,
         include=["documents", "metadatas", "distances"]
     )
@@ -61,3 +54,43 @@ def generate_answer(query: str, context: str) -> str:
 
 
 def answer_query(query: str, verbose: bool = False) -> str:
+    chunks = retrieve(query)
+
+    if verbose:
+        print(f"\n--- Retrieved {len(chunks)} chunks ---")
+        for i, c in enumerate(chunks, 1):
+            print(f"  [{i}] {c['source']} p.{c['page']} | distance={c['distance']:.4f}")
+            print(f"      {c['text'][:120]}...")
+
+    context = build_context(chunks)
+    answer = generate_answer(query, context)
+    return answer
+
+
+def interactive_mode():
+    print("RAG Q&A System — type 'exit' to quit, 'verbose' to toggle debug output\n")
+    verbose = False
+    while True:
+        try:
+            query = input("Q: ").strip()
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting.")
+            break
+        if not query:
+            continue
+        if query.lower() == "exit":
+            break
+        if query.lower() == "verbose":
+            verbose = not verbose
+            print(f"Verbose mode: {'on' if verbose else 'off'}")
+            continue
+        answer = answer_query(query, verbose=verbose)
+        print(f"\nA: {answer}\n")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        query = " ".join(sys.argv[1:])
+        print(answer_query(query, verbose=True))
+    else:
+        interactive_mode()

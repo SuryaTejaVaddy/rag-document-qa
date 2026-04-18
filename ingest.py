@@ -3,17 +3,12 @@ import sys
 import hashlib
 import tiktoken
 import chromadb
-from google import genai
-from google.genai import types
 from tqdm import tqdm
 from pypdf import PdfReader
 from config import (
-    GEMINI_API_KEY, EMBEDDING_MODEL, CHUNK_SIZE,
-    CHUNK_OVERLAP, CHROMA_DB_PATH, COLLECTION_NAME
+    CHUNK_SIZE, CHUNK_OVERLAP, CHROMA_DB_PATH, COLLECTION_NAME
 )
 
-client = genai.Client(api_key=GEMINI_API_KEY,
-                      http_options=types.HttpOptions(api_version="v1"))
 enc = tiktoken.encoding_for_model("text-embedding-ada-002")
 
 
@@ -57,18 +52,6 @@ def chunk_text(text: str, source: str, page: int) -> list[dict]:
     return chunks
 
 
-def embed_texts(texts: list[str]) -> list[list[float]]:
-    all_embeddings = []
-    for text in tqdm(texts, desc="Embedding"):
-        result = client.models.embed_content(
-            model=EMBEDDING_MODEL,
-            contents=text,
-            config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT")
-        )
-        all_embeddings.append(result.embeddings[0].values)
-    return all_embeddings
-
-
 def ingest_file(filepath: str):
     print(f"\nIngesting: {filepath}")
 
@@ -89,50 +72,5 @@ def ingest_file(filepath: str):
         all_chunks.extend(chunks)
     print(f"  Created {len(all_chunks)} chunks")
 
-    texts = [c["text"] for c in all_chunks]
-    embeddings = embed_texts(texts)
-
     chroma_client = chromadb.PersistentClient(path=CHROMA_DB_PATH)
     collection = chroma_client.get_or_create_collection(
-        name=COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"}
-    )
-
-    ids = [c["id"] for c in all_chunks]
-    metadatas = [{"source": c["source"], "page": c["page"], "token_count": c["token_count"]} for c in all_chunks]
-
-    collection.upsert(
-        ids=ids,
-        embeddings=embeddings,
-        documents=texts,
-        metadatas=metadatas
-    )
-    print(f"  Stored {len(all_chunks)} chunks in ChromaDB")
-    print(f"  Collection size: {collection.count()} total chunks")
-
-
-def ingest_directory(directory: str):
-    files = [
-        os.path.join(directory, f)
-        for f in os.listdir(directory)
-        if f.endswith((".pdf", ".txt"))
-    ]
-    if not files:
-        print(f"No PDF or TXT files found in {directory}")
-        return
-    for filepath in files:
-        ingest_file(filepath)
-
-
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python ingest.py <file_or_directory>")
-        sys.exit(1)
-    target = sys.argv[1]
-    if os.path.isdir(target):
-        ingest_directory(target)
-    elif os.path.isfile(target):
-        ingest_file(target)
-    else:
-        print(f"Path not found: {target}")
-        sys.exit(1)
