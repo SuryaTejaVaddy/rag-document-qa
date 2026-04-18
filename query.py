@@ -1,21 +1,22 @@
 import sys
 import chromadb
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from config import (
     GEMINI_API_KEY, EMBEDDING_MODEL, CHAT_MODEL,
     TOP_K, CHROMA_DB_PATH, COLLECTION_NAME, SYSTEM_PROMPT
 )
 
-genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 
 def embed_query(query: str) -> list[float]:
-    result = genai.embed_content(
+    result = client.models.embed_content(
         model=EMBEDDING_MODEL,
-        content=query,
-        task_type="retrieval_query"
+        contents=query,
+        config=types.EmbedContentConfig(task_type="RETRIEVAL_QUERY")
     )
-    return result["embedding"]
+    return result.embeddings[0].values
 
 
 def retrieve(query_embedding: list[float], top_k: int = TOP_K) -> list[dict]:
@@ -49,54 +50,13 @@ def build_context(chunks: list[dict]) -> str:
 
 
 def generate_answer(query: str, context: str) -> str:
-    model = genai.GenerativeModel(
-        model_name=CHAT_MODEL,
-        system_instruction=SYSTEM_PROMPT
-    )
     prompt = f"Context:\n{context}\n\nQuestion: {query}"
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model=CHAT_MODEL,
+        contents=prompt,
+        config=types.GenerateContentConfig(system_instruction=SYSTEM_PROMPT)
+    )
     return response.text
 
 
 def answer_query(query: str, verbose: bool = False) -> str:
-    query_embedding = embed_query(query)
-    chunks = retrieve(query_embedding)
-
-    if verbose:
-        print(f"\n--- Retrieved {len(chunks)} chunks ---")
-        for i, c in enumerate(chunks, 1):
-            print(f"  [{i}] {c['source']} p.{c['page']} | distance={c['distance']:.4f}")
-            print(f"      {c['text'][:120]}...")
-
-    context = build_context(chunks)
-    answer = generate_answer(query, context)
-    return answer
-
-
-def interactive_mode():
-    print("RAG Q&A System — type 'exit' to quit, 'verbose' to toggle debug output\n")
-    verbose = False
-    while True:
-        try:
-            query = input("Q: ").strip()
-        except (KeyboardInterrupt, EOFError):
-            print("\nExiting.")
-            break
-        if not query:
-            continue
-        if query.lower() == "exit":
-            break
-        if query.lower() == "verbose":
-            verbose = not verbose
-            print(f"Verbose mode: {'on' if verbose else 'off'}")
-            continue
-        answer = answer_query(query, verbose=verbose)
-        print(f"\nA: {answer}\n")
-
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        query = " ".join(sys.argv[1:])
-        print(answer_query(query, verbose=True))
-    else:
-        interactive_mode()

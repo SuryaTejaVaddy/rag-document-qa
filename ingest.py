@@ -3,7 +3,8 @@ import sys
 import hashlib
 import tiktoken
 import chromadb
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from tqdm import tqdm
 from pypdf import PdfReader
 from config import (
@@ -11,8 +12,9 @@ from config import (
     CHUNK_OVERLAP, CHROMA_DB_PATH, COLLECTION_NAME
 )
 
-genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 enc = tiktoken.encoding_for_model("text-embedding-ada-002")
+
 
 def load_pdf(filepath: str) -> list[dict]:
     reader = PdfReader(filepath)
@@ -27,10 +29,12 @@ def load_pdf(filepath: str) -> list[dict]:
             })
     return pages
 
+
 def load_txt(filepath: str) -> list[dict]:
     with open(filepath, "r", encoding="utf-8") as f:
         text = f.read()
     return [{"text": text.strip(), "page": 1, "source": os.path.basename(filepath)}]
+
 
 def chunk_text(text: str, source: str, page: int) -> list[dict]:
     tokens = enc.encode(text)
@@ -51,16 +55,18 @@ def chunk_text(text: str, source: str, page: int) -> list[dict]:
         start += CHUNK_SIZE - CHUNK_OVERLAP
     return chunks
 
+
 def embed_texts(texts: list[str]) -> list[list[float]]:
     all_embeddings = []
     for text in tqdm(texts, desc="Embedding"):
-        result = genai.embed_content(
+        result = client.models.embed_content(
             model=EMBEDDING_MODEL,
-            content=text,
-            task_type="retrieval_document"
+            contents=text,
+            config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT")
         )
-        all_embeddings.append(result["embedding"])
+        all_embeddings.append(result.embeddings[0].values)
     return all_embeddings
+
 
 def ingest_file(filepath: str):
     print(f"\nIngesting: {filepath}")
@@ -103,6 +109,7 @@ def ingest_file(filepath: str):
     print(f"  Stored {len(all_chunks)} chunks in ChromaDB")
     print(f"  Collection size: {collection.count()} total chunks")
 
+
 def ingest_directory(directory: str):
     files = [
         os.path.join(directory, f)
@@ -114,6 +121,7 @@ def ingest_directory(directory: str):
         return
     for filepath in files:
         ingest_file(filepath)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
