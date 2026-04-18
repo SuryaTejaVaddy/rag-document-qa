@@ -1,4 +1,4 @@
-RAG Document Q&A SystemA Retrieval-Augmented Generation (RAG) pipeline that lets you ask questions about your PDF and text documents using Google Gemini AI.How It WorksIngest — PDFs/text files are chunked and stored in ChromaDB (local vector database)Retrieve — Your question is matched against stored chunks using semantic searchGenerate — Gemini AI reads the matched chunks and answers your questionPrerequisitesPython 3.11+A Gemini API key from aistudio.google.com (free tier)GitHub Codespaces (recommended) or local Python environmentSetup1. Clone the RepositoryBashgit clone https://github.com/SuryaTejaVaddy/rag-document-qa.git
+"""RAG Document Q&A SystemA Retrieval-Augmented Generation (RAG) pipeline that lets you ask questions about your PDF and text documents using Google Gemini AI.How It WorksIngest — PDFs/text files are chunked and stored in ChromaDB (local vector database)Retrieve — Your question is matched against stored chunks using semantic searchGenerate — Gemini AI reads the matched chunks and answers your questionPrerequisitesPython 3.11+A Gemini API key from aistudio.google.com (free tier)GitHub Codespaces (recommended) or local Python environmentSetup1. Clone the RepositoryBashgit clone https://github.com/SuryaTejaVaddy/rag-document-qa.git
 cd rag-document-qa
 2. Install DependenciesBashpip install -r requirements.txt
 3. Set Your API KeyOption A — GitHub Codespaces (recommended):Go to your GitHub repository → Settings → Secrets and variables → Codespaces → New secret:Name: GEMINI_API_KEYValue: your API keyThen restart your Codespace. If the key doesn't load automatically, run:Bashexport GEMINI_API_KEY="your-api-key-here"
@@ -15,3 +15,4 @@ Runs predefined test questions and saves results to eval_results.json.Configurat
 ├── data/              # Place your documents here
 ├── chroma_db/         # Auto-created vector database
 └── .devcontainer/     # GitHub Codespaces configuration
+"""
