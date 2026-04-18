@@ -7,7 +7,8 @@ from config import (
     TOP_K, CHROMA_DB_PATH, COLLECTION_NAME, SYSTEM_PROMPT
 )
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY,
+                      http_options=types.HttpOptions(api_version="v1"))
 
 
 def embed_query(query: str) -> list[float]:

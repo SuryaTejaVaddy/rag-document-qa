@@ -12,7 +12,8 @@ from config import (
     CHUNK_OVERLAP, CHROMA_DB_PATH, COLLECTION_NAME
 )
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY,
+                      http_options=types.HttpOptions(api_version="v1"))
 enc = tiktoken.encoding_for_model("text-embedding-ada-002")
 
 
