@@ -5,7 +5,7 @@ load_dotenv()
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 EMBEDDING_MODEL = "text-embedding-004"
-CHAT_MODEL = "gemini-1.5-flash"
+CHAT_MODEL = "gemini-2.0-flash"
 
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
