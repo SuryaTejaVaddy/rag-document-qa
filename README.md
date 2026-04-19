@@ -122,11 +122,11 @@ The `GetPciBusId` warning from ONNX Runtime is harmless — ChromaDB uses it for
 
 ## Project Structure
 rag-document-qa/
-├── config.py          # Configuration settings
-├── ingest.py          # Document loading, chunking, and storage
-├── query.py           # Retrieval and answer generation
-├── evaluate.py        # Test suite with keyword-match scoring
-├── requirements.txt   # Python dependencies
-├── data/              # Place your documents here
-├── chroma_db/         # Auto-created vector database
-└── .devcontainer/     # GitHub Codespaces configuration
+  - `config.py` — Configuration settings
+  - `ingest.py` — Document loading, chunking, and storage
+  - `query.py` — Retrieval and answer generation
+  - `evaluate.py` — Test suite with keyword-match scoring
+  - `requirements.txt` — Python dependencies
+  - `data/` — Place your documents here
+  - `chroma_db/` — Auto-created vector database
+  - `.devcontainer/` — GitHub Codespaces configuration
